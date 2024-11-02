@@ -21,7 +21,7 @@ def rightyx( y: int, x: int, h: int, w: int): # returnd the yx of the pixel abov
     nx =  x+1 if x != w-1 else 0 
     return (y,nx)
 
-def update_cycle( old: np.array, n_colors: int):
+def update_cycle_eater( old: np.array, n_colors: int):
     next_gen = old.copy()
     height, width = old.shape
     nchanged = 0
@@ -34,6 +34,22 @@ def update_cycle( old: np.array, n_colors: int):
                 if old[ty,tx] == target :
                     nchanged = nchanged+1
                     next_gen[ty,tx] = cur
+    return (next_gen,nchanged)
+  
+def update_cycle_eaten( old: np.array, n_colors: int):
+    next_gen = old.copy()
+    height, width = old.shape
+    nchanged = 0
+    for y in range(height):
+        for x in range(width):
+            cur = old[y,x]
+            predator = cur+1 if cur < n_colors-1 else 0
+            neighbors  = [topyx(y,x,height,width),rightyx(y,x,height,width), bottomyx(y,x,height,width), leftyx(y,x,height,width)]
+            for (ty,tx) in neighbors:
+                if old[ty,tx] == predator :
+                    nchanged = nchanged+1
+                    next_gen[y,x] = predator
+                    break
     return (next_gen,nchanged)  
 
     
@@ -73,7 +89,7 @@ def main():
      # Step 1: # Step 1: upload image file as jpg/jpeg, include label
     # uploaded_file = st.file_uploader(" #### :camera: :violet[1. Upload Image] ", type=["JPG", "JPEG", "PNG"])
     url = st.text_input(
-      "Enter image url: ", 'http://image.shutterstock.com/display_pic_with_logo/848443/238473214/stock-photo-wat-thai-sunset-in-temple-thailand-they-are-public-domain-or-treasure-of-buddhism-no-restrict-in-238473214.jpg')
+      "Enter image url: ", 'https://img.freepik.com/free-photo/colorful-majestic-waterfall-national-park-forest-autumn_554837-6.jpg?w=360')
   
      # st.image(image)
 
@@ -92,7 +108,7 @@ def main():
         edge = math.sqrt(image_array.shape[0]* image_array.shape[1])
         default_scale_factor = target_image_width/edge
         # st.write( " edge, scale", edge, default_scale_factor)
-        num_colors = st.slider("Number of Colors:", 2, 32, 16)
+        num_colors = st.slider("Number of Colors:", 2, 32, 12)
         size_factor = st.slider("Resize Factor", 0.01, 4.0, default_scale_factor)
         newsize = (int(image_array.shape[1]* size_factor), int(image_array.shape[0]* size_factor) )
         st.write("Newsize:", newsize)
@@ -118,13 +134,12 @@ def main():
         # new_quantized_array = (int(quantized_array + (num_colors/2))) % 16
         # placeholder = st.image(quantized_image, caption="Animated Image", use_column_width=False)
         placeholder = st.empty()
-        placeholder2 = st.empty()
         placeholder.image(quantized_image, use_column_width=True)
         nPixels = quantized_array.shape[0] * quantized_array.shape[1]
         prev_ntouched = 0
         streak = 0
         while True:
-            (new_quantized_array, ntouched) = update_cycle(quantized_array, num_colors)
+            (new_quantized_array, ntouched) = update_cycle_eaten(quantized_array, num_colors)
             if ntouched == prev_ntouched:
                 streak = streak+1
             else:
@@ -145,11 +160,15 @@ def main():
             quantized_array = new_quantized_array.copy()
             # st.write("Size of Quantized image",next_image.size)
             # st.write("Mode of Quantized image",next_image.mode)
+            print (ntouched)
+            if ntouched == nPixels:
+                st.write(" Simulation ended.  All ", nPixels, "pixels changed" )
+                break
             if ntouched == 0:
-                st.write(" Simulation ending. 0 pixels changed last generation")
+                st.write(" Simulation ended. 0 pixels changed last generation")
                 break
             if  streak >= 60:
-                st.write(" Simulation may be looping. ", streak, " generations in a row changed the same number of pixels")
+                st.write(" Simulation ended. May be looping. ", streak, " generations in a row changed the same number of pixels")
                 break
       
         # st.image(quantized_image, caption="Updated Quantized Image", use_column_width=True)
