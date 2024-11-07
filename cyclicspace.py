@@ -21,7 +21,7 @@ def rightyx( y: int, x: int, h: int, w: int): # returnd the yx of the pixel abov
     nx =  x+1 if x != w-1 else 0 
     return (y,nx)
 
-def update_cycle_eater( old: np.array, n_colors: int):
+def update_cycle_eater( old: np.array, n_colors: int):# Iterate over each cell and eat all target neighbors
     next_gen = old.copy()
     height, width = old.shape
     nchanged = 0
@@ -36,7 +36,7 @@ def update_cycle_eater( old: np.array, n_colors: int):
                     next_gen[ty,tx] = cur
     return (next_gen,nchanged)
   
-def update_cycle_eaten( old: np.array, n_colors: int):
+def update_cycle_eaten( old: np.array, n_colors: int): # Iterate over each cell and see if it is going to eaten by any neighbors
     next_gen = old.copy()
     height, width = old.shape
     nchanged = 0
@@ -86,17 +86,48 @@ def main():
     st.markdown("This page is a cyclic space simulator I wrote to explore these automata and a mimi project to brush up on my Python coding and to try out [streamlit](https://streamlit.io/)")
     st.markdown("Cyclic Space is a grid of cells where each cell has one of n possible values, numbered 0 through n-1. Cyclic spaces are most interesting when n is fairly small. In each generation any cell with a value k will eat any neighboring cell that has value k-1. Cells is the 0 state will eat cells in the n-1 state thus allowing loops of state changes.  Choose any image to load. You can then choose the number of colors to color-reduce the image into an image with n colors. The cyclic algorithm will then run successive generations of the cyclic space. You can also scale the image. Smaller images animate faster. Watch for the Demons of cyclic space to appear. These crystal seeds will continue to grow. ")
     st.divider()
-     # Step 1: # Step 1: upload image file as jpg/jpeg, include label
+
+    gen_random = st.checkbox("Generate random image")
+
+    if gen_random:
+        # Set the size of the image
+        x = 256
+        y = 256
+
+        # Generate an array of random monochrome pixels
+        mono_pixels = np.random.rand(y, x) * 255
+
+        # Create an array of random monochrome (r,g,b) pixels where each pixel has r = g = b
+        pixels = np.stack((mono_pixels, mono_pixels, mono_pixels), axis=2)
+
+        # Convert the array to uint8 type
+        pixels = pixels.astype(np.uint8)
+
+        # Create an image from the array
+        image = Image.fromarray(pixels, 'RGB')
+        # st.image(img, caption="Random Image", use_column_width=False)
+    else: 
+        # Step 1: # Step 1: upload image file as jpg/jpeg, include label
+        # uploaded_file = st.file_uploader(" #### :camera: :violet[1. Upload Image] ", type=["JPG", "JPEG", "PNG"])
+        url = st.text_input(
+          "Enter image url: ", 'https://img.freepik.com/free-photo/colorful-majestic-waterfall-national-park-forest-autumn_554837-6.jpg?w=360')
+        response = requests.get(url)
+        image = Image.open(BytesIO(response.content))
+    
+    
+    # Step 1: # Step 1: upload image file as jpg/jpeg, include label
     # uploaded_file = st.file_uploader(" #### :camera: :violet[1. Upload Image] ", type=["JPG", "JPEG", "PNG"])
-    url = st.text_input(
-      "Enter image url: ", 'https://img.freepik.com/free-photo/colorful-majestic-waterfall-national-park-forest-autumn_554837-6.jpg?w=360')
-  
+    #url = st.text_input(
+    #  "Enter image url: ", 'https://img.freepik.com/free-photo/colorful-majestic-waterfall-national-park-forest-autumn_554837-6.jpg?w=360')
+    # print(" reloading image url")
+    
      # st.image(image)
 
     target_image_width = 200
-    if len(url) > 0:
-        response = requests.get(url)
-        image = Image.open(BytesIO(response.content))
+    if image != None:
+        # print(" reloading image url")
+        # response = requests.get(url)
+        # image = Image.open(BytesIO(response.content))
         # Display uploaded image with label
         st.image(image, caption="Uploaded Image", use_column_width=False)
         # image = Image.open(uploaded_file)
@@ -160,7 +191,7 @@ def main():
             quantized_array = new_quantized_array.copy()
             # st.write("Size of Quantized image",next_image.size)
             # st.write("Mode of Quantized image",next_image.mode)
-            print (ntouched)
+            # print (ntouched)
             if ntouched == nPixels:
                 st.write(" Simulation ended.  All ", nPixels, "pixels changed" )
                 break
